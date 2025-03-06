@@ -3,15 +3,19 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/codecrafters-io/shell-starter-go/app/commands"
+	"iter"
+	"maps"
 	"os"
 	"strings"
+
+	"github.com/codecrafters-io/shell-starter-go/app/commands"
 )
 
 func main() {
-	commandMap := map[string]func([]string){
+	commandMap := map[string]func(iter.Seq[string], []string){
 		"exit": commands.Exit,
 		"echo": commands.Echo,
+		"type": commands.Type,
 	}
 
 	for {
@@ -33,6 +37,8 @@ func main() {
 			continue
 		}
 
-		command(args)
+		keys := maps.Keys(commandMap)
+
+		command(keys, args)
 	}
 }
