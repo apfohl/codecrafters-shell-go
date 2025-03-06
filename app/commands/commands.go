@@ -2,11 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"github.com/codecrafters-io/shell-starter-go/app/file_system"
 	"iter"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/codecrafters-io/shell-starter-go/app/file_system"
 )
 
 func Exit(_ iter.Seq[string], args []string) {
@@ -49,4 +50,14 @@ func Type(commands iter.Seq[string], args []string) {
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "%s is %s\n", cmd, command)
+}
+
+func Pwd(_ iter.Seq[string], _ []string) {
+	directory, err := os.Getwd()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "can not read working directory\n")
+		os.Exit(-1)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "%s\n", directory)
 }

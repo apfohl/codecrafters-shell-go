@@ -18,6 +18,7 @@ func main() {
 		"exit": commands.Exit,
 		"echo": commands.Echo,
 		"type": commands.Type,
+		"pwd":  commands.Pwd,
 	}
 
 	for {
