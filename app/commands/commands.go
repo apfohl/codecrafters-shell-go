@@ -23,5 +23,4 @@ func Exit(args []string) {
 
 func Echo(args []string) {
 	_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
-	os.Exit(0)
 }
