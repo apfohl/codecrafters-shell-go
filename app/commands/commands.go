@@ -41,5 +41,26 @@ func Type(commands iter.Seq[string], args []string) {
 		}
 	}
 
+	pathEnv, found := os.LookupEnv("PATH")
+	if !found {
+		_, _ = fmt.Fprintf(os.Stdout, "env variable not found: PATH\n")
+		return
+	}
+
+	for _, directory := range strings.Split(pathEnv, ":") {
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "could not read directory: %s\n", directory)
+			os.Exit(-1)
+		}
+
+		for _, entry := range entries {
+			if !entry.IsDir() && entry.Name() == cmd {
+				_, _ = fmt.Fprintf(os.Stdout, "%s is %s\n", cmd, fmt.Sprintf("%s/%s", directory, cmd))
+				return
+			}
+		}
+	}
+
 	_, _ = fmt.Fprintf(os.Stdout, "%s: not found\n", cmd)
 }
