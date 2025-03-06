@@ -3,9 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/codecrafters-io/shell-starter-go/app/file_system"
+	"io"
 	"iter"
 	"maps"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/codecrafters-io/shell-starter-go/app/commands"
@@ -32,13 +35,52 @@ func main() {
 		}
 
 		command, ok := commandMap[cmd]
-		if !ok {
-			_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", input)
+		if ok {
+			command(maps.Keys(commandMap), args)
 			continue
 		}
 
-		keys := maps.Keys(commandMap)
+		executable, err := file_system.FindExecutable(cmd)
+		if err == nil {
+			c := exec.Command(executable, args...)
 
-		command(keys, args)
+			var stdout io.ReadCloser
+			stdout, err = c.StdoutPipe()
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+				os.Exit(-1)
+			}
+
+			done := make(chan []string)
+			scanner := bufio.NewScanner(stdout)
+
+			go func() {
+				var lines []string
+
+				for scanner.Scan() {
+					lines = append(lines, scanner.Text())
+				}
+
+				done <- lines
+			}()
+
+			if err = c.Start(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+				os.Exit(-1)
+			}
+
+			lines := <-done
+
+			if err = c.Wait(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+				os.Exit(-1)
+			}
+
+			_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(lines, "\n"))
+
+			continue
+		}
+
+		_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", input)
 	}
 }
