@@ -61,3 +61,17 @@ func Pwd(_ iter.Seq[string], _ []string) {
 
 	_, _ = fmt.Fprintf(os.Stdout, "%s\n", directory)
 }
+
+func Cd(_ iter.Seq[string], args []string) {
+	if len(args) != 1 {
+		_, _ = fmt.Fprintf(os.Stderr, "cd: invalid number of arguments (%d of 1)\n", len(args))
+		return
+	}
+
+	directory := args[0]
+	err := os.Chdir(directory)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "cd: %s: No such file or directory\n", directory)
+		return
+	}
+}

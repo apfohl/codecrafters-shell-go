@@ -14,11 +14,12 @@ import (
 )
 
 func main() {
-	commandMap := map[string]func(iter.Seq[string], []string){
+	builtins := map[string]func(iter.Seq[string], []string){
 		"exit": commands.Exit,
 		"echo": commands.Echo,
 		"type": commands.Type,
 		"pwd":  commands.Pwd,
+		"cd":   commands.Cd,
 	}
 
 	for {
@@ -32,19 +33,19 @@ func main() {
 		}
 
 		parts := strings.Split(input, " ")
-		cmd := parts[0]
+		commandName := parts[0]
 		var args []string
 		if len(parts) > 1 {
 			args = parts[1:]
 		}
 
-		command, ok := commandMap[cmd]
+		command, ok := builtins[commandName]
 		if ok {
-			command(maps.Keys(commandMap), args)
+			command(maps.Keys(builtins), args)
 			continue
 		}
 
-		c := exec.Command(cmd, args...)
+		c := exec.Command(commandName, args...)
 
 		var stdout io.ReadCloser
 		stdout, err := c.StdoutPipe()
@@ -67,7 +68,7 @@ func main() {
 		}()
 
 		if err = c.Start(); err != nil {
-			_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", cmd)
+			_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", commandName)
 			continue
 		}
 
