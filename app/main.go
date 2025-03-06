@@ -30,7 +30,7 @@ func main() {
 		command, ok := commandMap[cmd]
 		if !ok {
 			_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", input)
-			os.Exit(-1)
+			continue
 		}
 
 		command(args)
