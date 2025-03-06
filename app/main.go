@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/codecrafters-io/shell-starter-go/app/file_system"
 	"io"
 	"iter"
 	"maps"
@@ -27,6 +26,10 @@ func main() {
 		input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		input = strings.Trim(input, "\n")
 
+		if len(input) == 0 {
+			continue
+		}
+
 		parts := strings.Split(input, " ")
 		cmd := parts[0]
 		var args []string
@@ -40,47 +43,40 @@ func main() {
 			continue
 		}
 
-		executable, err := file_system.FindExecutable(cmd)
-		if err == nil {
-			c := exec.Command(executable, args...)
+		c := exec.Command(cmd, args...)
 
-			var stdout io.ReadCloser
-			stdout, err = c.StdoutPipe()
-			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-				os.Exit(-1)
+		var stdout io.ReadCloser
+		stdout, err := c.StdoutPipe()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+			os.Exit(-1)
+		}
+
+		done := make(chan []string)
+		scanner := bufio.NewScanner(stdout)
+
+		go func() {
+			var lines []string
+
+			for scanner.Scan() {
+				lines = append(lines, scanner.Text())
 			}
 
-			done := make(chan []string)
-			scanner := bufio.NewScanner(stdout)
+			done <- lines
+		}()
 
-			go func() {
-				var lines []string
-
-				for scanner.Scan() {
-					lines = append(lines, scanner.Text())
-				}
-
-				done <- lines
-			}()
-
-			if err = c.Start(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-				os.Exit(-1)
-			}
-
-			lines := <-done
-
-			if err = c.Wait(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-				os.Exit(-1)
-			}
-
-			_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(lines, "\n"))
-
+		if err = c.Start(); err != nil {
+			_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", cmd)
 			continue
 		}
 
-		_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", input)
+		lines := <-done
+
+		if err = c.Wait(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+			os.Exit(-1)
+		}
+
+		_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(lines, "\n"))
 	}
 }
