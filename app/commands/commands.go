@@ -50,6 +50,7 @@ func Type(commands iter.Seq[string], args []string) {
 	for _, directory := range strings.Split(pathEnv, ":") {
 		entries, err := os.ReadDir(directory)
 		if err != nil {
+			continue
 			_, _ = fmt.Fprintf(os.Stderr, "could not read directory: %s\n", directory)
 			os.Exit(-1)
 		}
