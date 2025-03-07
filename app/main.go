@@ -34,7 +34,7 @@ func main() {
 		}
 
 		parts := strings.SplitN(input, " ", 2)
-		commandName := parts[0]
+		commandName := arguments.ParseArgs(parts[0])[0]
 		var args []string
 		if len(parts) > 1 {
 			args = arguments.ParseArgs(parts[1])
