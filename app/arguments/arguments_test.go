@@ -41,6 +41,16 @@ func TestParseArgs(t *testing.T) {
 			args: args{input: "a  'b c'  g'g''h'h"},
 			want: []string{"a", "b c", "gghh"},
 		},
+		{
+			name: "double quotes simple",
+			args: args{input: "\"quz  hello\"  \"bar\""},
+			want: []string{"quz  hello", "bar"},
+		},
+		{
+			name: "double quotes more complex",
+			args: args{input: "\"bar\"  \"shell's\"  \"foo\""},
+			want: []string{"bar", "shell's", "foo"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
