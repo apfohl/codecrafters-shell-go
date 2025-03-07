@@ -87,6 +87,17 @@ func TestFindOutputRedirect(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "redirect stderr",
+			args: args{args: []string{"James file cannot be found", "2>", "/tmp/qux/foo.md"}},
+			want: arguments.Redirect{
+				IsRedirect:  true,
+				CommandArgs: []string{"James file cannot be found"},
+				Direction:   2,
+				Destination: "/tmp/qux/foo.md",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

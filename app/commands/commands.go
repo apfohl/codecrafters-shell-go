@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"iter"
@@ -165,12 +166,25 @@ func Execute(commandName string, redirect arguments.Redirect) ([]string, error) 
 			return []string{}, err
 		}
 
-		if _, err = io.Copy(file, commandStdout); err != nil {
-			return []string{}, err
-		}
+		switch redirect.Direction {
+		case 1:
+			if _, err = io.Copy(file, commandStdout); err != nil {
+				return []string{}, err
+			}
 
-		if _, err = io.Copy(os.Stderr, commandStderr); err != nil {
-			return []string{}, err
+			if _, err = io.Copy(os.Stderr, commandStderr); err != nil {
+				return []string{}, err
+			}
+		case 2:
+			if _, err = io.Copy(os.Stdout, commandStdout); err != nil {
+				return []string{}, err
+			}
+
+			if _, err = io.Copy(file, commandStderr); err != nil {
+				return []string{}, err
+			}
+		default:
+			return []string{}, errors.New("invalid redirect direction")
 		}
 
 		if err = command.Wait(); err != nil {
