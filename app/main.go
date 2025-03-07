@@ -33,11 +33,11 @@ func main() {
 			continue
 		}
 
-		parts := strings.SplitN(input, " ", 2)
-		commandName := arguments.ParseArgs(parts[0])[0]
+		parsedInput := arguments.ParseArgs(input)
+		commandName := parsedInput[0]
 		var args []string
-		if len(parts) > 1 {
-			args = arguments.ParseArgs(parts[1])
+		if len(parsedInput) > 1 {
+			args = parsedInput[1:]
 		}
 
 		command, ok := builtins[commandName]
