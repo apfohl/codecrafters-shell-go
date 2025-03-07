@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/codecrafters-io/shell-starter-go/app/arguments"
 	"io"
 	"iter"
 	"maps"
@@ -32,11 +33,11 @@ func main() {
 			continue
 		}
 
-		parts := strings.Split(input, " ")
+		parts := strings.SplitN(input, " ", 2)
 		commandName := parts[0]
 		var args []string
 		if len(parts) > 1 {
-			args = parts[1:]
+			args = arguments.ParseArgs(parts[1])
 		}
 
 		command, ok := builtins[commandName]
