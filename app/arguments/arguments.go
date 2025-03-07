@@ -3,11 +3,23 @@ package arguments
 func ParseArgs(input string) []string {
 	inSingleQuotes := false
 	inDoubleQuotes := false
+	escaped := false
 	buffer := make([]rune, 0)
 
 	args := make([]string, 0)
 	for _, char := range input {
+		if escaped {
+			buffer = append(buffer, char)
+			escaped = false
+			continue
+		}
+
 		if char == '"' {
+			if inSingleQuotes {
+				buffer = append(buffer, char)
+				continue
+			}
+
 			if inDoubleQuotes {
 				inDoubleQuotes = false
 				continue
@@ -44,6 +56,13 @@ func ParseArgs(input string) []string {
 			}
 
 			continue
+		}
+
+		if char == '\\' {
+			if !inDoubleQuotes && !inSingleQuotes {
+				escaped = true
+				continue
+			}
 		}
 
 		buffer = append(buffer, char)
