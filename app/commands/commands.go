@@ -63,7 +63,7 @@ func Pwd(_ iter.Seq[string], _ []string) {
 }
 
 func Cd(_ iter.Seq[string], args []string) {
-	if len(args) == 0 {
+	if len(args) == 0 || (len(args) == 1 && args[0] == "~") {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "cd: user home directory not found\n")
@@ -75,6 +75,8 @@ func Cd(_ iter.Seq[string], args []string) {
 			_, _ = fmt.Fprintf(os.Stderr, "cd: %s: No such file or directory\n", homeDir)
 			return
 		}
+
+		return
 	}
 
 	if len(args) > 1 {
