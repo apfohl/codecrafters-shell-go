@@ -25,7 +25,7 @@ func Exit(_ iter.Seq[string], args []string) {
 }
 
 func Echo(_ iter.Seq[string], args []string) {
-	_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, ""))
+	_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
 }
 
 func Type(commands iter.Seq[string], args []string) {
