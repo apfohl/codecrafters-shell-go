@@ -3,19 +3,18 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/codecrafters-io/shell-starter-go/app/arguments"
 	"io"
 	"iter"
 	"maps"
 	"os"
-	"os/exec"
 	"strings"
 
+	"github.com/codecrafters-io/shell-starter-go/app/arguments"
 	"github.com/codecrafters-io/shell-starter-go/app/commands"
 )
 
 func main() {
-	builtins := map[string]func(iter.Seq[string], []string){
+	builtins := map[string]func(iter.Seq[string], []string, io.WriteCloser){
 		"exit": commands.Exit,
 		"echo": commands.Echo,
 		"type": commands.Type,
@@ -40,46 +39,38 @@ func main() {
 			args = parsedInput[1:]
 		}
 
+		redirect, err := arguments.FindOutputRedirect(args)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stdout, "%s: output redirect failure: %s\n", commandName, err.Error())
+			continue
+		}
+
 		command, ok := builtins[commandName]
 		if ok {
-			command(maps.Keys(builtins), args)
-			continue
-		}
+			if redirect.IsRedirect {
+				var file *os.File
+				file, err = os.OpenFile(redirect.Destination, os.O_WRONLY|os.O_CREATE, 0644)
+				if err != nil {
+					_, _ = fmt.Fprintf(os.Stdout, "%s: output open redirect destination: %s\n", commandName, err.Error())
+				}
 
-		c := exec.Command(commandName, args...)
+				command(maps.Keys(builtins), redirect.CommandArgs, file)
 
-		var stdout io.ReadCloser
-		stdout, err := c.StdoutPipe()
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-			os.Exit(-1)
-		}
-
-		done := make(chan []string)
-		scanner := bufio.NewScanner(stdout)
-
-		go func() {
-			var lines []string
-
-			for scanner.Scan() {
-				lines = append(lines, scanner.Text())
+				file.Close()
+				continue
 			}
 
-			done <- lines
-		}()
-
-		if err = c.Start(); err != nil {
-			_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", commandName)
+			command(maps.Keys(builtins), redirect.CommandArgs, os.Stdout)
 			continue
 		}
 
-		lines := <-done
-
-		if err = c.Wait(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-			os.Exit(-1)
+		output, err := commands.Execute(commandName, redirect)
+		if err != nil {
+			continue
 		}
 
-		_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(lines, "\n"))
+		if len(output) > 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(output, "\n"))
+		}
 	}
 }

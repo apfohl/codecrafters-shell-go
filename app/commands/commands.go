@@ -1,16 +1,20 @@
 package commands
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"iter"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/codecrafters-io/shell-starter-go/app/arguments"
 	"github.com/codecrafters-io/shell-starter-go/app/file_system"
 )
 
-func Exit(_ iter.Seq[string], args []string) {
+func Exit(_ iter.Seq[string], args []string, _ io.WriteCloser) {
 	if len(args) == 0 {
 		os.Exit(0)
 	}
@@ -24,11 +28,11 @@ func Exit(_ iter.Seq[string], args []string) {
 	os.Exit(code)
 }
 
-func Echo(_ iter.Seq[string], args []string) {
-	_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
+func Echo(_ iter.Seq[string], args []string, writer io.WriteCloser) {
+	_, _ = fmt.Fprintf(writer, "%s\n", strings.Join(args, " "))
 }
 
-func Type(commands iter.Seq[string], args []string) {
+func Type(commands iter.Seq[string], args []string, writer io.WriteCloser) {
 	if len(args) != 1 {
 		_, _ = fmt.Fprintf(os.Stderr, "type: invalid number of arguments (%d of 1)\n", len(args))
 		return
@@ -38,31 +42,31 @@ func Type(commands iter.Seq[string], args []string) {
 
 	for command := range commands {
 		if command == cmd {
-			_, _ = fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", cmd)
+			_, _ = fmt.Fprintf(writer, "%s is a shell builtin\n", cmd)
 			return
 		}
 	}
 
 	command, err := file_system.FindExecutable(cmd)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stdout, "%s\n", err.Error())
+		_, _ = fmt.Fprintf(writer, "%s\n", err.Error())
 		return
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "%s is %s\n", cmd, command)
+	_, _ = fmt.Fprintf(writer, "%s is %s\n", cmd, command)
 }
 
-func Pwd(_ iter.Seq[string], _ []string) {
+func Pwd(_ iter.Seq[string], _ []string, writer io.WriteCloser) {
 	directory, err := os.Getwd()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "can not read working directory\n")
 		os.Exit(-1)
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "%s\n", directory)
+	_, _ = fmt.Fprintf(writer, "%s\n", directory)
 }
 
-func Cd(_ iter.Seq[string], args []string) {
+func Cd(_ iter.Seq[string], args []string, _ io.WriteCloser) {
 	if len(args) == 0 || (len(args) == 1 && args[0] == "~") {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -130,4 +134,83 @@ func initializePath(segments []string) ([]string, error) {
 
 	path := strings.Split(wd, "/")
 	return path[1:], nil
+}
+
+func Execute(commandName string, redirect arguments.Redirect) ([]string, error) {
+	command := exec.Command(commandName, redirect.CommandArgs...)
+
+	if redirect.IsRedirect {
+		file, err := os.OpenFile(redirect.Destination, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return []string{}, err
+		}
+		defer func(file *os.File) {
+			err = file.Close()
+			if err != nil {
+				panic("could not close file")
+			}
+		}(file)
+
+		commandStdout, err := command.StdoutPipe()
+		if err != nil {
+			return []string{}, err
+		}
+
+		commandStderr, err := command.StderrPipe()
+		if err != nil {
+			return []string{}, err
+		}
+
+		if err = command.Start(); err != nil {
+			return []string{}, err
+		}
+
+		if _, err = io.Copy(file, commandStdout); err != nil {
+			return []string{}, err
+		}
+
+		if _, err = io.Copy(os.Stderr, commandStderr); err != nil {
+			return []string{}, err
+		}
+
+		if err = command.Wait(); err != nil {
+			return []string{}, err
+		}
+
+		return []string{}, nil
+	}
+
+	var commandStdout io.ReadCloser
+	commandStdout, err := command.StdoutPipe()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(-1)
+	}
+
+	done := make(chan []string)
+	scanner := bufio.NewScanner(commandStdout)
+
+	go func() {
+		var lines []string
+
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+
+		done <- lines
+	}()
+
+	if err = command.Start(); err != nil {
+		_, _ = fmt.Fprintf(os.Stdout, "%s: command not found\n", commandName)
+		return []string{}, nil
+	}
+
+	lines := <-done
+
+	if err = command.Wait(); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		os.Exit(-1)
+	}
+
+	return lines, nil
 }

@@ -65,3 +65,39 @@ func TestParseArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestFindOutputRedirect(t *testing.T) {
+	type args struct {
+		args []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    arguments.Redirect
+		wantErr bool
+	}{
+		{
+			name: "redirect parsing",
+			args: args{args: []string{"Hello James", "1>", "/tmp/qux/qux.md"}},
+			want: arguments.Redirect{
+				IsRedirect:  true,
+				CommandArgs: []string{"Hello James"},
+				Direction:   1,
+				Destination: "/tmp/qux/qux.md",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := arguments.FindOutputRedirect(tt.args.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FindOutputRedirect() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FindOutputRedirect() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

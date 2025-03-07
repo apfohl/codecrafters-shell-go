@@ -1,5 +1,11 @@
 package arguments
 
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
+
 func ParseArgs(input string) []string {
 	inSingleQuotes := false
 	inDoubleQuotes := false
@@ -91,4 +97,39 @@ func ParseArgs(input string) []string {
 	}
 
 	return args
+}
+
+type Redirect struct {
+	IsRedirect  bool
+	CommandArgs []string
+	Direction   int
+	Destination string
+}
+
+func FindOutputRedirect(args []string) (Redirect, error) {
+	for i, arg := range args {
+		if strings.HasSuffix(arg, ">") {
+			if i+1 > len(args)-1 {
+				return Redirect{IsRedirect: true}, errors.New("no output redirect Destination given")
+			}
+
+			direction := 1
+			if len(arg) == 2 {
+				var err error
+				direction, err = strconv.Atoi(string(arg[0]))
+				if err != nil {
+					return Redirect{IsRedirect: true}, err
+				}
+			}
+
+			return Redirect{
+				IsRedirect:  true,
+				CommandArgs: args[:i],
+				Direction:   direction,
+				Destination: args[i+1],
+			}, nil
+		}
+	}
+
+	return Redirect{CommandArgs: args}, nil
 }
