@@ -63,15 +63,69 @@ func Pwd(_ iter.Seq[string], _ []string) {
 }
 
 func Cd(_ iter.Seq[string], args []string) {
-	if len(args) != 1 {
+	if len(args) == 0 {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "cd: user home directory not found\n")
+			return
+		}
+
+		err = os.Chdir(homeDir)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "cd: %s: No such file or directory\n", homeDir)
+			return
+		}
+	}
+
+	if len(args) > 1 {
 		_, _ = fmt.Fprintf(os.Stderr, "cd: invalid number of arguments (%d of 1)\n", len(args))
 		return
 	}
 
-	directory := args[0]
-	err := os.Chdir(directory)
+	segments := strings.Split(args[0], "/")
+	path, err := initializePath(segments)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "cd: %s:could not parse input\n", args[0])
+		return
+	}
+
+	if segments[0] == "" {
+		segments = segments[1:]
+	}
+
+	for _, segment := range segments {
+		switch segment {
+		case "..":
+			if len(path) > 0 {
+				path = path[:len(path)-1]
+			}
+		case ".":
+			continue
+		default:
+			path = append(path, segment)
+		}
+	}
+
+	directory := strings.Join(path, "/")
+	directory = fmt.Sprintf("/%s", directory)
+
+	err = os.Chdir(directory)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "cd: %s: No such file or directory\n", directory)
 		return
 	}
+}
+
+func initializePath(segments []string) ([]string, error) {
+	if segments[0] == "" {
+		return make([]string, 0), nil
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	path := strings.Split(wd, "/")
+	return path[1:], nil
 }
