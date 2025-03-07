@@ -9,6 +9,26 @@ func ParseArgs(input string) []string {
 	args := make([]string, 0)
 	for _, char := range input {
 		if escaped {
+			if inSingleQuotes {
+				buffer = append(buffer, '\\')
+				buffer = append(buffer, char)
+				escaped = false
+				continue
+			}
+
+			if inDoubleQuotes {
+				if char == '\\' || char == '"' || char == '$' {
+					buffer = append(buffer, char)
+					escaped = false
+					continue
+				}
+
+				buffer = append(buffer, '\\')
+				buffer = append(buffer, char)
+				escaped = false
+				continue
+			}
+
 			buffer = append(buffer, char)
 			escaped = false
 			continue
@@ -59,10 +79,8 @@ func ParseArgs(input string) []string {
 		}
 
 		if char == '\\' {
-			if !inDoubleQuotes && !inSingleQuotes {
-				escaped = true
-				continue
-			}
+			escaped = true
+			continue
 		}
 
 		buffer = append(buffer, char)
