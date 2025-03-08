@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	builtins := map[string]func(iter.Seq[string], []string, io.WriteCloser){
+	builtins := map[string]func(iter.Seq[string], []string, io.WriteCloser, io.WriteCloser){
 		"exit": commands.Exit,
 		"echo": commands.Echo,
 		"type": commands.Type,
@@ -54,13 +54,18 @@ func main() {
 					_, _ = fmt.Fprintf(os.Stdout, "%s: output open redirect destination: %s\n", commandName, err.Error())
 				}
 
-				command(maps.Keys(builtins), redirect.CommandArgs, file)
+				switch redirect.Direction {
+				case 1:
+					command(maps.Keys(builtins), redirect.CommandArgs, file, os.Stderr)
+				case 2:
+					command(maps.Keys(builtins), redirect.CommandArgs, os.Stdout, file)
+				}
 
 				file.Close()
 				continue
 			}
 
-			command(maps.Keys(builtins), redirect.CommandArgs, os.Stdout)
+			command(maps.Keys(builtins), redirect.CommandArgs, os.Stdout, os.Stderr)
 			continue
 		}
 

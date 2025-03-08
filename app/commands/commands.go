@@ -15,7 +15,7 @@ import (
 	"github.com/codecrafters-io/shell-starter-go/app/file_system"
 )
 
-func Exit(_ iter.Seq[string], args []string, _ io.WriteCloser) {
+func Exit(_ iter.Seq[string], args []string, _ io.WriteCloser, _ io.WriteCloser) {
 	if len(args) == 0 {
 		os.Exit(0)
 	}
@@ -29,11 +29,11 @@ func Exit(_ iter.Seq[string], args []string, _ io.WriteCloser) {
 	os.Exit(code)
 }
 
-func Echo(_ iter.Seq[string], args []string, writer io.WriteCloser) {
-	_, _ = fmt.Fprintf(writer, "%s\n", strings.Join(args, " "))
+func Echo(_ iter.Seq[string], args []string, stdout io.WriteCloser, _ io.WriteCloser) {
+	_, _ = fmt.Fprintf(stdout, "%s\n", strings.Join(args, " "))
 }
 
-func Type(commands iter.Seq[string], args []string, writer io.WriteCloser) {
+func Type(commands iter.Seq[string], args []string, stdout io.WriteCloser, _ io.WriteCloser) {
 	if len(args) != 1 {
 		_, _ = fmt.Fprintf(os.Stderr, "type: invalid number of arguments (%d of 1)\n", len(args))
 		return
@@ -43,31 +43,31 @@ func Type(commands iter.Seq[string], args []string, writer io.WriteCloser) {
 
 	for command := range commands {
 		if command == cmd {
-			_, _ = fmt.Fprintf(writer, "%s is a shell builtin\n", cmd)
+			_, _ = fmt.Fprintf(stdout, "%s is a shell builtin\n", cmd)
 			return
 		}
 	}
 
 	command, err := file_system.FindExecutable(cmd)
 	if err != nil {
-		_, _ = fmt.Fprintf(writer, "%s\n", err.Error())
+		_, _ = fmt.Fprintf(stdout, "%s\n", err.Error())
 		return
 	}
 
-	_, _ = fmt.Fprintf(writer, "%s is %s\n", cmd, command)
+	_, _ = fmt.Fprintf(stdout, "%s is %s\n", cmd, command)
 }
 
-func Pwd(_ iter.Seq[string], _ []string, writer io.WriteCloser) {
+func Pwd(_ iter.Seq[string], _ []string, stdout io.WriteCloser, _ io.WriteCloser) {
 	directory, err := os.Getwd()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "can not read working directory\n")
 		os.Exit(-1)
 	}
 
-	_, _ = fmt.Fprintf(writer, "%s\n", directory)
+	_, _ = fmt.Fprintf(stdout, "%s\n", directory)
 }
 
-func Cd(_ iter.Seq[string], args []string, _ io.WriteCloser) {
+func Cd(_ iter.Seq[string], args []string, _ io.WriteCloser, _ io.WriteCloser) {
 	if len(args) == 0 || (len(args) == 1 && args[0] == "~") {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
