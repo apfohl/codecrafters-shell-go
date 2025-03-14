@@ -141,7 +141,12 @@ func Execute(commandName string, redirect arguments.Redirect) ([]string, error) 
 	command := exec.Command(commandName, redirect.CommandArgs...)
 
 	if redirect.IsRedirect {
-		file, err := os.OpenFile(redirect.Destination, os.O_WRONLY|os.O_CREATE, 0644)
+		flags := os.O_WRONLY | os.O_CREATE
+		if redirect.Append {
+			flags |= os.O_APPEND
+		}
+
+		file, err := os.OpenFile(redirect.Destination, flags, 0644)
 		if err != nil {
 			return []string{}, err
 		}

@@ -104,10 +104,35 @@ type Redirect struct {
 	CommandArgs []string
 	Direction   int
 	Destination string
+	Append      bool
 }
 
 func FindOutputRedirect(args []string) (Redirect, error) {
 	for i, arg := range args {
+		if strings.HasSuffix(arg, ">>") {
+			if i+1 > len(args)-1 {
+				return Redirect{IsRedirect: true}, errors.New("no output redirect Destination given")
+			}
+
+			direction := 1
+			if len(arg) == 3 {
+				var err error
+				direction, err = strconv.Atoi(string(arg[0]))
+				if err != nil {
+					return Redirect{IsRedirect: true}, err
+				}
+
+			}
+
+			return Redirect{
+				IsRedirect:  true,
+				CommandArgs: args[:i],
+				Direction:   direction,
+				Destination: args[i+1],
+				Append:      true,
+			}, nil
+		}
+
 		if strings.HasSuffix(arg, ">") {
 			if i+1 > len(args)-1 {
 				return Redirect{IsRedirect: true}, errors.New("no output redirect Destination given")
@@ -127,6 +152,7 @@ func FindOutputRedirect(args []string) (Redirect, error) {
 				CommandArgs: args[:i],
 				Direction:   direction,
 				Destination: args[i+1],
+				Append:      false,
 			}, nil
 		}
 	}

@@ -49,7 +49,12 @@ func main() {
 		if ok {
 			if redirect.IsRedirect {
 				var file *os.File
-				file, err = os.OpenFile(redirect.Destination, os.O_WRONLY|os.O_CREATE, 0644)
+				var flags = os.O_WRONLY | os.O_CREATE
+				if redirect.Append {
+					flags |= os.O_APPEND
+				}
+
+				file, err = os.OpenFile(redirect.Destination, flags, 0644)
 				if err != nil {
 					_, _ = fmt.Fprintf(os.Stdout, "%s: output open redirect destination: %s\n", commandName, err.Error())
 				}
