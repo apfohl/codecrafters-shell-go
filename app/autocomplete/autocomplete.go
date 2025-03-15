@@ -1,8 +1,10 @@
 package autocomplete
 
 import (
+	"fmt"
 	"io"
 	"iter"
+	"os"
 	"strings"
 )
 
@@ -25,6 +27,8 @@ func Complete(
 	if len(suffixes) == 1 {
 		return suffixes[0]
 	}
+
+	_, _ = fmt.Fprint(os.Stdout, "\a")
 
 	return ""
 }
