@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/codecrafters-io/shell-starter-go/app/autocomplete"
 	"io"
 	"iter"
 	"maps"
@@ -11,22 +12,22 @@ import (
 
 	"github.com/codecrafters-io/shell-starter-go/app/arguments"
 	"github.com/codecrafters-io/shell-starter-go/app/commands"
+	"golang.org/x/term"
 )
 
-func main() {
-	builtins := map[string]func(iter.Seq[string], []string, io.WriteCloser, io.WriteCloser){
-		"exit": commands.Exit,
-		"echo": commands.Echo,
-		"type": commands.Type,
-		"pwd":  commands.Pwd,
-		"cd":   commands.Cd,
-	}
+var builtins = map[string]func(iter.Seq[string], []string, io.WriteCloser, io.WriteCloser){
+	"exit": commands.Exit,
+	"echo": commands.Echo,
+	"type": commands.Type,
+	"pwd":  commands.Pwd,
+	"cd":   commands.Cd,
+}
 
+func main() {
 	for {
 		_, _ = fmt.Fprint(os.Stdout, "$ ")
 
-		input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		input = strings.Trim(input, "\n")
+		input := readInput(os.Stdin)
 
 		if len(input) == 0 {
 			continue
@@ -81,6 +82,46 @@ func main() {
 
 		if len(output) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(output, "\n"))
+		}
+	}
+}
+
+func readInput(stdin io.Reader) (input string) {
+	state, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+	defer term.Restore(int(os.Stdin.Fd()), state)
+
+	reader := bufio.NewReader(stdin)
+
+	for {
+		character, _ := reader.ReadByte()
+
+		switch character {
+		case 3:
+			os.Exit(0)
+
+		case '\r', '\n':
+			_, _ = fmt.Fprint(os.Stdout, "\r\n")
+			return
+
+		case 127:
+			if length := len(input); length > 0 {
+				input = input[:length-1]
+				_, _ = fmt.Fprint(os.Stdout, "\b \b")
+			}
+
+		case '\t':
+			complete := autocomplete.Complete(input, builtins)
+			if complete != "" {
+				input += complete + " "
+				_, _ = fmt.Fprintf(os.Stdout, "%s ", complete)
+			}
+
+		default:
+			input += string(character)
+			_, _ = fmt.Fprint(os.Stdout, string(character))
 		}
 	}
 }
