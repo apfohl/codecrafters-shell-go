@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/codecrafters-io/shell-starter-go/app/autocomplete"
 	"io"
 	"iter"
 	"maps"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/codecrafters-io/shell-starter-go/app/arguments"
+	"github.com/codecrafters-io/shell-starter-go/app/autocomplete"
 	"github.com/codecrafters-io/shell-starter-go/app/commands"
 	"golang.org/x/term"
 )
@@ -50,7 +50,7 @@ func main() {
 		if ok {
 			if redirect.IsRedirect {
 				var file *os.File
-				var flags = os.O_WRONLY | os.O_CREATE
+				flags := os.O_WRONLY | os.O_CREATE
 				if redirect.Append {
 					flags |= os.O_APPEND
 				}
