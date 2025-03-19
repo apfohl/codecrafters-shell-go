@@ -115,8 +115,8 @@ func readInput(stdin io.Reader) (input string) {
 		case '\t':
 			complete := autocomplete.Complete(input, builtins)
 			if complete != "" {
-				input += complete + " "
-				_, _ = fmt.Fprintf(os.Stdout, "%s ", complete)
+				input += complete
+				_, _ = fmt.Fprintf(os.Stdout, "%s", complete)
 			}
 
 		default:

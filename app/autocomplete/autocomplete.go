@@ -36,21 +36,34 @@ func Complete(
 		}
 	}
 
+	commands := make([]string, 0)
+	for suffix := range suffixes {
+		commands = append(commands, prefix+suffix)
+	}
+
+	slices.Sort(commands)
+
+	longestPrefix := findLongestPrefix(commands)
+
 	if len(suffixes) > 1 {
 		if len(tabbedPrefix) > 0 && tabbedPrefix == prefix {
-			printCompletions(prefix, suffixes)
+			_, _ = fmt.Fprintf(os.Stdout, "\r\n%s\r\n$ %s", strings.Join(commands, "  "), prefix)
 			return ""
 		}
 
 		_, _ = fmt.Fprint(os.Stdout, "\a")
-		tabbedPrefix = prefix
-		return ""
+
+		suffix, _ := strings.CutPrefix(longestPrefix, prefix)
+
+		//suffix, _ := strings.CutPrefix(commands[0], prefix)
+		tabbedPrefix = prefix + suffix
+		return suffix
 	}
 
 	if len(suffixes) == 1 {
 		tabbedPrefix = ""
 		for suffix := range suffixes {
-			return suffix
+			return suffix + " "
 		}
 	}
 
@@ -58,15 +71,21 @@ func Complete(
 	return ""
 }
 
-func printCompletions(prefix string, suffixes map[string]bool) {
-	_, _ = fmt.Fprint(os.Stdout, "\r\n")
-
-	var buffer []string
-	for suffix := range suffixes {
-		buffer = append(buffer, prefix+suffix)
+func findLongestPrefix(commands []string) string {
+	if len(commands) == 0 {
+		return ""
 	}
 
-	slices.Sort(buffer)
+	prefix := ""
 
-	_, _ = fmt.Fprintf(os.Stdout, "%s\r\n$ %s", strings.Join(buffer, "  "), prefix)
+	for i, char := range commands[0] {
+		for _, command := range commands[1:] {
+			if []int32(command)[i] != char {
+				return prefix
+			}
+		}
+		prefix += string(char)
+	}
+
+	return prefix
 }
