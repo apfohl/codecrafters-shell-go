@@ -55,7 +55,6 @@ func Complete(
 
 		suffix, _ := strings.CutPrefix(longestPrefix, prefix)
 
-		//suffix, _ := strings.CutPrefix(commands[0], prefix)
 		tabbedPrefix = prefix + suffix
 		return suffix
 	}
